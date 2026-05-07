@@ -45,9 +45,15 @@ news must have 4-6 REAL items from web search, mostly negative. type is "negativ
     if (!allText) throw new Error('No text response')
 
     const jsonMatch = allText.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) throw new Error('No JSON found in response')
+if (!jsonMatch) throw new Error('No JSON found in response')
 
-    const parsed = JSON.parse(jsonMatch[0])
+const cleaned = jsonMatch[0]
+  .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
+  .replace(/\n/g, ' ')
+  .replace(/\r/g, ' ')
+  .trim()
+
+const parsed = JSON.parse(cleaned)
 
     if (!parsed.isCompany) {
       return res.status(400).json({ error: `"${companyName}" does not appear to be a real company.` })
