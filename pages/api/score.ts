@@ -19,16 +19,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const response = await client.messages.create({
       model: 'claude-haiku-4-5',
-      max_tokens: 800,
-      system: `Corporate ethics investigator. Be critical and honest. Score LOW for companies with scandals.
-RULES: Large corps score 20-50/100. Below 35 for major controversies. Never above 65 unless genuinely ethical.
-If input is not a real company set isCompany to false.
-Return ONLY JSON, no markdown, no backticks:
-{"isCompany":true,"company":"Name","overall":30,"summary":"Critical summary","categories":{"environment":{"score":25,"summary":"sentence"},"labor":{"score":30,"summary":"sentence"},"governance":{"score":25,"summary":"sentence"},"community":{"score":30,"summary":"sentence"},"transparency":{"score":20,"summary":"sentence"}},"keyIssues":[{"label":"Short label","description":"One critical sentence about a known issue"},{"label":"Short label","description":"One critical sentence"},{"label":"Short label","description":"One critical sentence"}],"news":[{"title":"headline","description":"description","type":"negative","url":"","year":"2024"}]}
-keyIssues must have exactly 3 items. news must have 4-5 items. type is negative or positive.`,
+      max_tokens: 1000,
+      system: `You are a corporate ethics scorer. Be critical. Large corps score 20-50/100.
+If not a real company: {"isCompany":false}
+
+CRITICAL RULES FOR JSON:
+- Use ONLY double quotes
+- NO apostrophes anywhere - write "does not" not "doesn't", "company is" not "company's"
+- NO special characters in strings
+- Keep all text values under 80 characters
+- Return ONLY the JSON, nothing else
+
+Format:
+{"isCompany":true,"company":"Name","overall":30,"summary":"Short critical summary under 80 chars","categories":{"environment":{"score":25,"summary":"Short sentence"},"labor":{"score":30,"summary":"Short sentence"},"governance":{"score":25,"summary":"Short sentence"},"community":{"score":30,"summary":"Short sentence"},"transparency":{"score":20,"summary":"Short sentence"}},"keyIssues":[{"label":"Issue name","description":"Short description under 80 chars"},{"label":"Issue name","description":"Short description under 80 chars"},{"label":"Issue name","description":"Short description under 80 chars"}],"news":[{"title":"Short title","description":"Short description under 80 chars","type":"negative","url":"","year":"2024"},{"title":"Short title","description":"Short description under 80 chars","type":"negative","url":"","year":"2023"},{"title":"Short title","description":"Short description","type":"negative","url":"","year":"2023"},{"title":"Short title","description":"Short description","type":"positive","url":"","year":"2024"}]}`,
       messages: [{
         role: 'user',
-        content: `Score ethics of: "${companyName}". Use known controversies and scandals. Be critical.`
+        content: `Score: "${companyName}". No apostrophes. Short strings only.`
       }]
     })
 
@@ -39,11 +45,11 @@ keyIssues must have exactly 3 items. news must have 4-5 items. type is negative 
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) throw new Error('No JSON found')
 
-   let jsonStr = jsonMatch[0]
-jsonStr = jsonStr.replace(/[\n\r\t]/g, ' ')
-jsonStr = jsonStr.replace(/,\s*}/g, '}')
-jsonStr = jsonStr.replace(/,\s*]/g, ']')
-jsonStr = jsonStr.replace(/([^\\])\\([^"\\\/bfnrtu])/g, '$1 $2')
+    let jsonStr = jsonMatch[0]
+    jsonStr = jsonStr.replace(/[\n\r\t]/g, ' ')
+    jsonStr = jsonStr.replace(/'/g, ' ')
+    jsonStr = jsonStr.replace(/,\s*}/g, '}')
+    jsonStr = jsonStr.replace(/,\s*]/g, ']')
 
     const parsed = JSON.parse(jsonStr)
 
