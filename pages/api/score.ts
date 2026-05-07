@@ -10,10 +10,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { companyName } = req.body
+  const companyName =
+    typeof req.body?.companyName === 'string'
+      ? req.body.companyName.trim()
+      : typeof req.body?.company === 'string'
+        ? req.body.company.trim()
+        : ''
 
-  if (!companyName || typeof companyName !== 'string') {
-    return res.status(400).json({ error: 'Company name is required' })
+  if (!companyName) {
+    return res.status(400).json({ error: 'Company name is required via "company" or "companyName".' })
   }
 
   try {

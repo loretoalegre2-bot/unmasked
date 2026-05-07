@@ -122,7 +122,7 @@ export default function Home() {
       const res = await fetch('/api/score', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyName: name.trim() }),
+        body: JSON.stringify({ company: name.trim() }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Something went wrong')
