@@ -21,39 +21,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       model: 'claude-sonnet-4-5',
       max_tokens: 1500,
       tools: [{ type: 'web_search_20250305', name: 'web_search' } as any],
-      system: `You are a critical corporate ethics investigator. Research companies and expose ethical issues with brutal honesty. Do NOT give companies the benefit of the doubt. Large corporations almost always have serious ethical problems.
+      system: `You are a critical corporate ethics investigator. Research companies and expose ethical issues with brutal honesty. Large corporations almost always have serious ethical problems.
 
-SCORING: Most large corporations should score 20-50/100. Very few deserve above 70. Companies with lawsuits, scandals, environmental violations, or labor abuses should score LOW. Do not be fooled by corporate PR or greenwashing. If you cannot confirm a company is real, set isCompany to false.
+SCORING: Most large corporations should score 20-50/100. Very few deserve above 70. Score LOW for companies with lawsuits, scandals, violations. If not a real company, set isCompany to false.
 
-Search the web for recent news, scandals, lawsuits, and controversies before scoring.
+CRITICAL: Your final response must be ONLY a JSON object. No text before or after. No markdown. No backticks. Use double quotes only. No apostrophes in values - replace with spaces. Keep all text values short and simple.
 
-Return ONLY valid JSON at the end, no extra text, no markdown:
-{"isCompany":true,"company":"Name","overall":0,"summary":"summary","categories":{"environment":{"score":0,"summary":""},"labor":{"score":0,"summary":""},"governance":{"score":0,"summary":""},"community":{"score":0,"summary":""},"transparency":{"score":0,"summary":""}},"news":[{"title":"","description":"","type":"negative","url":"","year":""}]}
-
-news must have 4-6 REAL items from web search, mostly negative. type is "negative" or "positive".`,
+JSON format:
+{"isCompany":true,"company":"Name","overall":35,"summary":"Short summary without apostrophes","categories":{"environment":{"score":30,"summary":"Short sentence"},"labor":{"score":30,"summary":"Short sentence"},"governance":{"score":30,"summary":"Short sentence"},"community":{"score":30,"summary":"Short sentence"},"transparency":{"score":30,"summary":"Short sentence"}},"news":[{"title":"Short title","description":"Short description","type":"negative","url":"","year":"2024"}]}`,
       messages: [{
         role: 'user',
-        content: `Research and score: "${companyName}". Verify it is a real company first. Search for scandals, lawsuits, environmental violations, labor abuses. Be critical and honest. End your response with ONLY the JSON object.`
+        content: `Research "${companyName}" ethics. Search for scandals and controversies. Respond with ONLY the JSON object, nothing else.`
       }]
     })
 
     const allText = response.content
       .filter((block: any) => block.type === 'text')
       .map((block: any) => block.text)
-      .join('\n')
+      .join(' ')
 
     if (!allText) throw new Error('No text response')
 
     const jsonMatch = allText.match(/\{[\s\S]*\}/)
-if (!jsonMatch) throw new Error('No JSON found in response')
+    if (!jsonMatch) throw new Error('No JSON found in response')
 
-const cleaned = jsonMatch[0]
-  .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
-  .replace(/\n/g, ' ')
-  .replace(/\r/g, ' ')
-  .trim()
+    let jsonStr = jsonMatch[0]
+    jsonStr = jsonStr.replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
+    jsonStr = jsonStr.replace(/\t/g, ' ')
+    jsonStr = jsonStr.replace(/\n/g, ' ')
+    jsonStr = jsonStr.replace(/\r/g, ' ')
+    jsonStr = jsonStr.replace(/,\s*}/g, '}')
+    jsonStr = jsonStr.replace(/,\s*]/g, ']')
 
-const parsed = JSON.parse(cleaned)
+    const parsed = JSON.parse(jsonStr)
 
     if (!parsed.isCompany) {
       return res.status(400).json({ error: `"${companyName}" does not appear to be a real company.` })
