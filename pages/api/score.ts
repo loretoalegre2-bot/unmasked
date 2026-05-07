@@ -39,10 +39,11 @@ keyIssues must have exactly 3 items. news must have 4-5 items. type is negative 
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) throw new Error('No JSON found')
 
-    let jsonStr = jsonMatch[0]
-    jsonStr = jsonStr.replace(/[\n\r\t]/g, ' ')
-    jsonStr = jsonStr.replace(/,\s*}/g, '}')
-    jsonStr = jsonStr.replace(/,\s*]/g, ']')
+   let jsonStr = jsonMatch[0]
+jsonStr = jsonStr.replace(/[\n\r\t]/g, ' ')
+jsonStr = jsonStr.replace(/,\s*}/g, '}')
+jsonStr = jsonStr.replace(/,\s*]/g, ']')
+jsonStr = jsonStr.replace(/([^\\])\\([^"\\\/bfnrtu])/g, '$1 $2')
 
     const parsed = JSON.parse(jsonStr)
 
