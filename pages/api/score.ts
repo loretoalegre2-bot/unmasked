@@ -1,70 +1,46 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
+import Anthropic from '@anthropic-ai/sdk'
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY
+const client = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+})
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { companyName } = req.body
+  const { companyName, premium } = req.body
 
   if (!companyName || typeof companyName !== 'string') {
     return res.status(400).json({ error: 'Company name is required' })
   }
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tools: [{ google_search: {} }],
-          contents: [{
-            role: 'user',
-            parts: [{
-              text: `You are a critical corporate ethics investigator. Research "${companyName}" and expose ethical issues with brutal honesty.
+    const response = await client.messages.create({
+      model: 'claude-haiku-4-5',
+      max_tokens: 800,
+      system: `Corporate ethics investigator. Be critical and honest. Score LOW for companies with scandals.
+RULES: Large corps score 20-50/100. Score below 35 for companies with major controversies. Never above 65 unless genuinely ethical.
+If input is not a real company set isCompany to false.
+Return ONLY JSON, no markdown, no backticks:
+{"isCompany":true,"company":"Name","overall":30,"summary":"Critical summary","categories":{"environment":{"score":25,"summary":"sentence"},"labor":{"score":30,"summary":"sentence"},"governance":{"score":25,"summary":"sentence"},"community":{"score":30,"summary":"sentence"},"transparency":{"score":20,"summary":"sentence"}},"news":[{"title":"headline","description":"description","type":"negative","url":"","year":"2024"}]}
+Include 4-5 news items based on known facts. type is negative or positive.`,
+      messages: [{
+        role: 'user',
+        content: `Score ethics of: "${companyName}". Use known controversies, scandals, lawsuits. Be critical.`
+      }]
+    })
 
-First verify this is a real company. If not, respond with exactly: {"isCompany":false}
+    const textBlock = response.content.find((block: any) => block.type === 'text')
+    if (!textBlock) throw new Error('No response')
 
-Search for recent scandals, lawsuits, environmental violations, labor abuses, and controversies.
-
-SCORING RULES:
-- Most large corporations score 20-50/100
-- Companies with major scandals score 15-35/100  
-- Very few deserve above 65/100
-- Be critical, do not be fooled by PR or greenwashing
-
-Respond with ONLY a JSON object, no markdown, no backticks, no extra text:
-{"isCompany":true,"company":"Official Name","overall":30,"summary":"Critical 2-3 sentence summary of main problems","categories":{"environment":{"score":25,"summary":"One critical sentence"},"labor":{"score":30,"summary":"One critical sentence"},"governance":{"score":25,"summary":"One critical sentence"},"community":{"score":30,"summary":"One critical sentence"},"transparency":{"score":20,"summary":"One critical sentence"}},"news":[{"title":"Headline","description":"Two sentence description of real event","type":"negative","url":"","year":"2024"},{"title":"Headline","description":"Two sentence description","type":"negative","url":"","year":"2023"},{"title":"Headline","description":"Two sentence description","type":"negative","url":"","year":"2023"},{"title":"Headline","description":"Two sentence description","type":"positive","url":"","year":"2024"}]}`
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 1500,
-          }
-        })
-      }
-    )
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      console.error('Gemini error:', data)
-      throw new Error(data.error?.message || 'Gemini API error')
-    }
-
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text
-    if (!text) throw new Error('No text response from Gemini')
-
+    const text = (textBlock as any).text.trim()
     const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) throw new Error('No JSON found in response')
+    if (!jsonMatch) throw new Error('No JSON found')
 
     let jsonStr = jsonMatch[0]
-    jsonStr = jsonStr.replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
-    jsonStr = jsonStr.replace(/\n/g, ' ')
-    jsonStr = jsonStr.replace(/\r/g, ' ')
+    jsonStr = jsonStr.replace(/[\n\r\t]/g, ' ')
     jsonStr = jsonStr.replace(/,\s*}/g, '}')
     jsonStr = jsonStr.replace(/,\s*]/g, ']')
 
