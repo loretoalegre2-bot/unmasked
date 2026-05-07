@@ -10,7 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { companyName, premium } = req.body
+  const { companyName } = req.body
 
   if (!companyName || typeof companyName !== 'string') {
     return res.status(400).json({ error: 'Company name is required' })
@@ -21,14 +21,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       model: 'claude-haiku-4-5',
       max_tokens: 800,
       system: `Corporate ethics investigator. Be critical and honest. Score LOW for companies with scandals.
-RULES: Large corps score 20-50/100. Score below 35 for companies with major controversies. Never above 65 unless genuinely ethical.
+RULES: Large corps score 20-50/100. Below 35 for major controversies. Never above 65 unless genuinely ethical.
 If input is not a real company set isCompany to false.
 Return ONLY JSON, no markdown, no backticks:
-{"isCompany":true,"company":"Name","overall":30,"summary":"Critical summary","categories":{"environment":{"score":25,"summary":"sentence"},"labor":{"score":30,"summary":"sentence"},"governance":{"score":25,"summary":"sentence"},"community":{"score":30,"summary":"sentence"},"transparency":{"score":20,"summary":"sentence"}},"news":[{"title":"headline","description":"description","type":"negative","url":"","year":"2024"}]}
-Include 4-5 news items based on known facts. type is negative or positive.`,
+{"isCompany":true,"company":"Name","overall":30,"summary":"Critical summary","categories":{"environment":{"score":25,"summary":"sentence"},"labor":{"score":30,"summary":"sentence"},"governance":{"score":25,"summary":"sentence"},"community":{"score":30,"summary":"sentence"},"transparency":{"score":20,"summary":"sentence"}},"keyIssues":[{"label":"Short label","description":"One critical sentence about a known issue"},{"label":"Short label","description":"One critical sentence"},{"label":"Short label","description":"One critical sentence"}],"news":[{"title":"headline","description":"description","type":"negative","url":"","year":"2024"}]}
+keyIssues must have exactly 3 items. news must have 4-5 items. type is negative or positive.`,
       messages: [{
         role: 'user',
-        content: `Score ethics of: "${companyName}". Use known controversies, scandals, lawsuits. Be critical.`
+        content: `Score ethics of: "${companyName}". Use known controversies and scandals. Be critical.`
       }]
     })
 
