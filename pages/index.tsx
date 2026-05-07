@@ -269,7 +269,7 @@ export default function Home() {
                 <span key={f} style={{ fontFamily: mono, fontSize: 11, color: '#44403c', letterSpacing: '0.08em', textTransform: 'uppercase' }}>✓ {f}</span>
               ))}
             </div>
-            <a href="https://ko-fi.com" target="_blank" rel="noopener noreferrer" className="kofi-btn" style={{ display: 'inline-block', background: '#1c1917', color: '#fff', fontFamily: mono, fontSize: 12, letterSpacing: '0.15em', textTransform: 'uppercase', border: 'none', padding: '14px 32px', cursor: 'pointer' }}>
+            <a href="https://ko-fi.com/unmaskedco" target="_blank" rel="noopener noreferrer" className="kofi-btn" style={{ display: 'inline-block', background: '#1c1917', color: '#fff', fontFamily: mono, fontSize: 12, letterSpacing: '0.15em', textTransform: 'uppercase', border: 'none', padding: '14px 32px', cursor: 'pointer' }}>
               Support on Ko-fi — $3
             </a>
             <div style={{ fontFamily: mono, fontSize: 10, color: '#d6d3d1', marginTop: 12, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
@@ -306,7 +306,7 @@ export default function Home() {
           <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', color: '#a8a29e', textTransform: 'uppercase' }}>
             Unmasked is free & independent — no ads, no corporate funding
           </span>
-          <a href="https://ko-fi.com" target="_blank" rel="noopener noreferrer" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.12em', color: '#fff', border: '1px solid #44403c', padding: '7px 16px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+          <a href="https://ko-fi.com/unmaskedc" target="_blank" rel="noopener noreferrer" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.12em', color: '#fff', border: '1px solid #44403c', padding: '7px 16px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
             ☕ Buy us a coffee
           </a>
         </div>
