@@ -18,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const response = await client.messages.create({
-      model: 'claude-opus-4-5',
+      model: 'claude-sonnet-4-5-20251001',
       max_tokens: 1500,
       tools: [{ type: 'web_search_20250305', name: 'web_search' } as any],
       system: `You are a critical corporate ethics investigator. Research companies and expose ethical issues with brutal honesty. Do NOT give companies the benefit of the doubt. Large corporations almost always have serious ethical problems.
