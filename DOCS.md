@@ -26,3 +26,4 @@
   - Removed the unsupported Anthropic built-in web-search tool call
   - Switched the default model path to `ANTHROPIC_MODEL ?? "claude-3-5-sonnet-20240620"` for compatibility with the installed SDK/API contract
   - Added explicit missing-key handling and cleaner JSON extraction/logging for runtime diagnostics
+  - Added a non-500 fallback scorecard response when the Anthropic call fails, so the live API and UI stay functional while the upstream provider issue is repaired

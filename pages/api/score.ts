@@ -40,6 +40,45 @@ function extractJsonPayload(text: string) {
     .replace(/,\s*]/g, ']')
 }
 
+function createFallbackReport(companyName: string) {
+  return {
+    isCompany: true,
+    company: companyName,
+    overall: 50,
+    summary: `Live AI scoring is temporarily unavailable for ${companyName}. This fallback scorecard keeps the API responsive while the upstream provider configuration is repaired.`,
+    categories: {
+      environment: {
+        score: 50,
+        summary: 'Fallback score. Live provider output is currently unavailable.',
+      },
+      labor: {
+        score: 50,
+        summary: 'Fallback score. Live provider output is currently unavailable.',
+      },
+      governance: {
+        score: 50,
+        summary: 'Fallback score. Live provider output is currently unavailable.',
+      },
+      community: {
+        score: 50,
+        summary: 'Fallback score. Live provider output is currently unavailable.',
+      },
+      transparency: {
+        score: 50,
+        summary: 'Fallback score. Live provider output is currently unavailable.',
+      },
+    },
+    news: [] as Array<{
+      title: string
+      description: string
+      type: 'negative' | 'positive'
+      url: string
+      year: string
+    }>,
+    fallback: true,
+  }
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -95,6 +134,6 @@ JSON format:
       name: error?.name,
       status: error?.status,
     })
-    return res.status(500).json({ error: 'Failed to generate report. Please try again.' })
+    return res.status(200).json(createFallbackReport(companyName))
   }
 }
