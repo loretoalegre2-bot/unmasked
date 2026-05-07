@@ -27,23 +27,24 @@ SCORING: Most large corporations should score 20-50/100. Very few deserve above 
 
 Search the web for recent news, scandals, lawsuits, and controversies before scoring.
 
-Return ONLY valid JSON, no extra text, no markdown:
+Return ONLY valid JSON at the end, no extra text, no markdown:
 {"isCompany":true,"company":"Name","overall":0,"summary":"summary","categories":{"environment":{"score":0,"summary":""},"labor":{"score":0,"summary":""},"governance":{"score":0,"summary":""},"community":{"score":0,"summary":""},"transparency":{"score":0,"summary":""}},"news":[{"title":"","description":"","type":"negative","url":"","year":""}]}
 
 news must have 4-6 REAL items from web search, mostly negative. type is "negative" or "positive".`,
       messages: [{
         role: 'user',
-        content: `Research and score: "${companyName}". Verify it is a real company first. Search for scandals, lawsuits, environmental violations, labor abuses. Be critical and honest.`
+        content: `Research and score: "${companyName}". Verify it is a real company first. Search for scandals, lawsuits, environmental violations, labor abuses. Be critical and honest. End your response with ONLY the JSON object.`
       }]
     })
 
-    const textBlock = response.content.find((block: any) => block.type === 'text')
-    if (!textBlock || textBlock.type !== 'text') {
-      throw new Error('No text response from Claude')
-    }
+    const allText = response.content
+      .filter((block: any) => block.type === 'text')
+      .map((block: any) => block.text)
+      .join('\n')
 
-    const raw = (textBlock as any).text.trim()
-    const jsonMatch = raw.match(/\{[\s\S]*\}/)
+    if (!allText) throw new Error('No text response')
+
+    const jsonMatch = allText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) throw new Error('No JSON found in response')
 
     const parsed = JSON.parse(jsonMatch[0])
@@ -55,7 +56,4 @@ news must have 4-6 REAL items from web search, mostly negative. type is "negativ
     return res.status(200).json(parsed)
 
   } catch (error: any) {
-    console.error('Claude API error:', error)
-    return res.status(500).json({ error: 'Failed to generate report. Please try again.' })
-  }
-}
+    console.erro
