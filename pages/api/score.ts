@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import OpenAI from 'openai'
+import Anthropic from '@anthropic-ai/sdk'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const client = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
 })
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -17,42 +17,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
+    const response = await client.messages.create({
+      model: 'claude-opus-4-5',
+      max_tokens: 1500,
+      tools: [
         {
-          role: 'system',
-          content: `You are an ethical business analyst. When given a company name, you will research and score that company across 5 ethical dimensions. Return ONLY a valid JSON object with no extra text.
-
-The JSON format must be exactly:
-{
-  "company": "Company Name",
-  "overall": <number 0-100>,
-  "summary": "<2-3 sentence overall summary>",
-  "categories": {
-    "environment": { "score": <0-100>, "summary": "<one sentence>" },
-    "labor": { "score": <0-100>, "summary": "<one sentence>" },
-    "governance": { "score": <0-100>, "summary": "<one sentence>" },
-    "community": { "score": <0-100>, "summary": "<one sentence>" },
-    "transparency": { "score": <0-100>, "summary": "<one sentence>" }
-  }
-}`
-        },
-        {
-          role: 'user',
-          content: `Score the ethical practices of this company: ${companyName}`
-        }
+          type: 'web_search_20250305',
+          name: 'web_search',
+        } as any,
       ],
-      temperature: 0.7,
-      max_tokens: 800,
-    })
+      system: `You are a critical corporate ethics investigator. Your job is to research companies and expose their ethical issues with brutal honesty. You do NOT give companies the benefit of the doubt. Large corporations almost always have serious ethical problems — your job is to find and report them.
 
-    const raw = completion.choices[0].message.content || ''
-    const parsed = JSON.parse(raw)
-    return res.status(200).json(parsed)
+SCORING PHILOSOPHY:
+- Most large corporations should score 20-50/100. Very few deserve above 70.
+- A company that has faced lawsuits, scandals, environmental violations, or labor abuses should score LOW.
+- Do not be fooled by corporate PR, sustainability reports, or greenwashing.
+- If you cannot confirm a company is real, return an error.
 
-  } catch (error) {
-    console.error('OpenAI error:', error)
-    return res.status(500).json({ error: 'Failed to generate score. Please try again.' })
-  }
+You MUST search the web for recent news, scandals, lawsuits, and controversies before scoring.
+
+Return ONLY a valid JSON object, no extra text, no markdown:
+{
+  "isCompany": true or false,
+  "company": "Official Company Name",
+  "overall": <number 0-100>,
+  "summary": "<2-3 sentence critical summary highlighting main problems>",
+  "categories": {
+    "environment": { "score": <0-100>, "summary": "<one critical sentence>" },
+    "labor": { "score": <0-100>, "summary": "<one critical sentence>" },
+    "governance": { "score": <0-100>, "summary": "<one critical sentence>" },
+    "community": { "score": <0-100>, "summary": "<one critical sentence>" },
+    "transparency": { "score": <0-100>, "summary": "<one critical sentence>" }
+  },
+  "news": [
+    {
+      "title": "<headline>",
+      "description": "<2 sentence description of the issue>",
+      "type": "negative" or "positive",
+      "url": "<source url if available, or empty string>",
+      "year": "<year as string>"
+    }
+  ]
 }
+
+The "news" array must contain 4-6 items — mostly negative (scandals, fines, lawsuits, controversies) but can include 1-2 positive items if genuinely notable. These must be REAL events you found via web search, not invented.`,
+      m
