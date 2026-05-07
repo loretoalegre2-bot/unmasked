@@ -56,4 +56,7 @@ news must have 4-6 REAL items from web search, mostly negative. type is "negativ
     return res.status(200).json(parsed)
 
   } catch (error: any) {
-    console.erro
+    console.error('Error:', error)
+    return res.status(500).json({ error: 'Failed to generate report. Please try again.' })
+  }
+}
