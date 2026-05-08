@@ -43,3 +43,11 @@
 - Kept a logged fallback response for provider and parsing failures; only fallback responses include `fallback: true`
 - Updated the homepage fetch payload to send `company` while preserving server support for legacy `companyName`
 - Updated homepage category typing/labels from `community` to `controversies` to match the new scorecard contract
+- Added `.gitignore`, `tsconfig.json`, `next-env.d.ts`, and `package-lock.json` so the TypeScript Next.js app builds reproducibly on Vercel
+- Verified locally that:
+  - `POST /api/score` accepts both `{"company":"Nestle"}` and `{"companyName":"Nestle"}`
+  - missing `OPENAI_API_KEY` now returns a logged `200` fallback scorecard instead of a `500`
+- Verified production after push to `main`:
+  - deployment with commit `99e0f21` reached `READY`
+  - `https://unmasked-co.vercel.app/api/score` is serving the new OpenAI-based code path
+  - production still returns the fallback payload because the Vercel project env list contains `ANTHROPIC_API_KEY` and `GEMINI_API_KEY`, but no `OPENAI_API_KEY`
