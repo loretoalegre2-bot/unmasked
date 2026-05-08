@@ -26,11 +26,12 @@ type ScoreResult = {
     environment: CategoryScore
     labor: CategoryScore
     governance: CategoryScore
-    community: CategoryScore
+    controversies: CategoryScore
     transparency: CategoryScore
   }
-  keyIssues: KeyIssue[]
-  news: NewsItem[]
+  sources?: string[]
+  keyIssues?: KeyIssue[]
+  news?: NewsItem[]
 }
 
 function getGrade(score: number): string {
@@ -64,7 +65,7 @@ const catLabels: Record<string, string> = {
   environment: 'Environment',
   labor: 'Labor',
   governance: 'Governance',
-  community: 'Community',
+  controversies: 'Controversies',
   transparency: 'Transparency',
 }
 
@@ -128,7 +129,7 @@ export default function Home() {
       const res = await fetch('/api/score', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyName: name.trim() }),
+        body: JSON.stringify({ company: name.trim() }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Something went wrong')
