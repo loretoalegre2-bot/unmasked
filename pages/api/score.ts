@@ -149,12 +149,12 @@ Rules:
     ],
   })
 
-  const content = response.content[0]
+ const content = response.content[0]
   if (content.type !== 'text' || !content.text.trim()) {
     throw new Error('Claude returned an empty response.')
   }
-
-  return normalizeScorecard(JSON.parse(content.text.trim()), company)
+  const cleaned = content.text.trim().replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim()
+  return normalizeScorecard(JSON.parse(cleaned), company)
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
