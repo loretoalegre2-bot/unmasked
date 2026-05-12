@@ -144,7 +144,11 @@ Rules:
 - summary must be 2 to 3 plain-text sentences
 - each category summary should be 1 sentence
 - sources must be plain strings with recognizable publications, reports, or URLs
-- if information is limited, still provide the best cautious scorecard you can from broadly known public reporting`,
+- if information is limited, still provide the best cautious scorecard you can from broadly known public reporting
+- distinguish between "lack of public ESG reporting" and "documented bad practices": a small or early-stage company with no controversies should not be penalized for not having formal ESG reports — that is normal for startups and SMEs
+- only score down when there is actual evidence of harm, controversy, or negligence
+- for small companies with no negative public record, scores should generally be in the 65-80 range unless there is a specific documented reason to score lower
+- for large corporations, apply stricter scrutiny given their resources and public accountability obligations
       },
     ],
   })
