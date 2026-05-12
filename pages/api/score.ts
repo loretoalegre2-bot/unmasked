@@ -153,7 +153,10 @@ Rules:
   if (content.type !== 'text' || !content.text.trim()) {
     throw new Error('Claude returned an empty response.')
   }
-  const cleaned = content.text.trim().replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim()
+  const raw = content.text.trim()
+  const cleaned = raw.startsWith('```')
+    ? raw.split('\n').slice(1).join('\n').replace(/```\s*$/, '').trim()
+    : raw
   return normalizeScorecard(JSON.parse(cleaned), company)
 }
 
