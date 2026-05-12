@@ -148,7 +148,7 @@ Rules:
 - distinguish between "lack of public ESG reporting" and "documented bad practices": a small or early-stage company with no controversies should not be penalized for not having formal ESG reports — that is normal for startups and SMEs
 - only score down when there is actual evidence of harm, controversy, or negligence
 - for small companies with no negative public record, scores should generally be in the 65-80 range unless there is a specific documented reason to score lower
-- for large corporations, apply stricter scrutiny given their resources and public accountability obligations
+- for large corporations, apply stricter scrutiny given their resources and public accountability obligations`,
       },
     ],
   })
