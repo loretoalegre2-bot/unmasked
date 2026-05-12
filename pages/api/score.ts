@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import OpenAI from 'openai'
+import Anthropic from '@anthropic-ai/sdk'
 
 type ScoreCategory = {
   score: number
@@ -21,13 +21,13 @@ type Scorecard = {
   fallback?: true
 }
 
-const MODEL_NAME = 'gpt-4o'
+const MODEL_NAME = 'claude-sonnet-4-20250514'
 const DEFAULT_CATEGORY_SUMMARY = 'No category-specific detail was returned.'
 const FALLBACK_SUMMARY =
   'A temporary model issue prevented a live ethics analysis, so this scorecard uses conservative placeholder estimates.'
 
-const openai = process.env.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const anthropic = process.env.ANTHROPIC_API_KEY
+  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   : null
 
 function normalizeCompany(value: unknown) {
@@ -38,7 +38,6 @@ function clampScore(value: unknown, fallback = 0) {
   if (typeof value !== 'number' || Number.isNaN(value)) {
     return fallback
   }
-
   return Math.max(0, Math.min(100, Math.round(value)))
 }
 
@@ -47,10 +46,7 @@ function normalizeSummary(value: unknown, fallback: string) {
 }
 
 function normalizeSources(value: unknown) {
-  if (!Array.isArray(value)) {
-    return []
-  }
-
+  if (!Array.isArray(value)) return []
   return value
     .filter((entry): entry is string => typeof entry === 'string')
     .map((entry) => entry.trim())
@@ -60,14 +56,9 @@ function normalizeSources(value: unknown) {
 
 function normalizeCategory(value: unknown, fallbackScore: number): ScoreCategory {
   if (!value || typeof value !== 'object') {
-    return {
-      score: fallbackScore,
-      summary: DEFAULT_CATEGORY_SUMMARY,
-    }
+    return { score: fallbackScore, summary: DEFAULT_CATEGORY_SUMMARY }
   }
-
   const category = value as Record<string, unknown>
-
   return {
     score: clampScore(category.score, fallbackScore),
     summary: normalizeSummary(category.summary, DEFAULT_CATEGORY_SUMMARY),
@@ -76,28 +67,24 @@ function normalizeCategory(value: unknown, fallbackScore: number): ScoreCategory
 
 function normalizeScorecard(payload: unknown, requestedCompany: string): Scorecard {
   if (!payload || typeof payload !== 'object') {
-    throw new Error('OpenAI returned a non-object payload.')
+    throw new Error('Claude returned a non-object payload.')
   }
-
   const raw = payload as Record<string, unknown>
   const overall = clampScore(raw.overall, 50)
   const categories =
     raw.categories && typeof raw.categories === 'object'
       ? (raw.categories as Record<string, unknown>)
       : {}
-
-  const categoryMap = {
-    environment: normalizeCategory(categories.environment, overall),
-    labor: normalizeCategory(categories.labor, overall),
-    governance: normalizeCategory(categories.governance, overall),
-    controversies: normalizeCategory(categories.controversies, overall),
-    transparency: normalizeCategory(categories.transparency, overall),
-  }
-
   return {
     company: normalizeCompany(raw.company) || requestedCompany,
     overall,
-    categories: categoryMap,
+    categories: {
+      environment: normalizeCategory(categories.environment, overall),
+      labor: normalizeCategory(categories.labor, overall),
+      governance: normalizeCategory(categories.governance, overall),
+      controversies: normalizeCategory(categories.controversies, overall),
+      transparency: normalizeCategory(categories.transparency, overall),
+    },
     summary: normalizeSummary(
       raw.summary,
       `${requestedCompany} has a mixed public record and should be reviewed more closely before relying on this score.`,
@@ -107,35 +94,17 @@ function normalizeScorecard(payload: unknown, requestedCompany: string): Scoreca
 }
 
 function createFallbackScorecard(company: string): Scorecard {
-  const overall = 48
-
   console.warn(`[api/score] Using fallback scorecard for ${company}`)
-
   return {
     company,
-    overall,
+    overall: 48,
     summary: FALLBACK_SUMMARY,
     categories: {
-      environment: {
-        score: 46,
-        summary: 'Environmental reporting could not be refreshed live.',
-      },
-      labor: {
-        score: 49,
-        summary: 'Labor conditions need a real-time review once the model call succeeds.',
-      },
-      governance: {
-        score: 50,
-        summary: 'Governance concerns are estimated because live analysis is unavailable.',
-      },
-      controversies: {
-        score: 43,
-        summary: 'Known controversies could not be re-evaluated in this request.',
-      },
-      transparency: {
-        score: 52,
-        summary: 'Transparency signals are provisional until a live response is available.',
-      },
+      environment: { score: 46, summary: 'Environmental reporting could not be refreshed live.' },
+      labor: { score: 49, summary: 'Labor conditions need a real-time review once the model call succeeds.' },
+      governance: { score: 50, summary: 'Governance concerns are estimated because live analysis is unavailable.' },
+      controversies: { score: 43, summary: 'Known controversies could not be re-evaluated in this request.' },
+      transparency: { score: 52, summary: 'Transparency signals are provisional until a live response is available.' },
     },
     sources: [],
     fallback: true,
@@ -143,20 +112,15 @@ function createFallbackScorecard(company: string): Scorecard {
 }
 
 async function generateScorecard(company: string) {
-  if (!openai) {
-    throw new Error('OPENAI_API_KEY is not configured.')
+  if (!anthropic) {
+    throw new Error('ANTHROPIC_API_KEY is not configured.')
   }
 
-  const response = await openai.chat.completions.create({
+  const response = await anthropic.messages.create({
     model: MODEL_NAME,
-    temperature: 0.2,
-    response_format: { type: 'json_object' },
+    max_tokens: 1024,
+    system: 'You are Unmasked, a corporate ethics analyst. Return valid JSON only. Use plain text. Do not wrap JSON in markdown.',
     messages: [
-      {
-        role: 'system',
-        content:
-          'You are Unmasked, a corporate ethics analyst. Return valid JSON only. Use plain text. Do not wrap JSON in markdown.',
-      },
       {
         role: 'user',
         content: `Create a JSON ethics scorecard for the company "${company}" with this exact shape:
@@ -185,13 +149,12 @@ Rules:
     ],
   })
 
-  const content = response.choices[0]?.message?.content?.trim()
-
-  if (!content) {
-    throw new Error('OpenAI returned an empty response.')
+  const content = response.content[0]
+  if (content.type !== 'text' || !content.text.trim()) {
+    throw new Error('Claude returned an empty response.')
   }
 
-  return normalizeScorecard(JSON.parse(content), company)
+  return normalizeScorecard(JSON.parse(content.text.trim()), company)
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -209,7 +172,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const scorecard = await generateScorecard(company)
     return res.status(200).json(scorecard)
   } catch (error) {
-    console.error('[api/score] Failed to generate OpenAI scorecard:', error)
+    console.error('[api/score] Failed to generate Claude scorecard:', error)
     return res.status(200).json(createFallbackScorecard(company))
   }
 }
