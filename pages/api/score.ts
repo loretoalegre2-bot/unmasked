@@ -21,7 +21,7 @@ type Scorecard = {
   fallback?: true
 }
 
-const MODEL_NAME = 'claude-sonnet-4-20250514'
+const MODEL_NAME = 'claude-sonnet-4-5'
 const DEFAULT_CATEGORY_SUMMARY = 'No category-specific detail was returned.'
 const FALLBACK_SUMMARY =
   'A temporary model issue prevented a live ethics analysis, so this scorecard uses conservative placeholder estimates.'
